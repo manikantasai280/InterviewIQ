@@ -6,6 +6,8 @@ class Settings(BaseSettings):
     app_name: str = "InterviewIQ API"
     app_version: str = "1.0.0"
     environment: str = "development"
+    # Database (no default on purpose: the app must get this from .env)
+    database_url: str
 
     # Tells pydantic-settings to read values from a file called .env
     model_config = SettingsConfigDict(
