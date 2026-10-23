@@ -1,0 +1,17 @@
+# Virtual environment
+.venv/
+
+# Secrets - never commit these
+.env
+.env.*
+!.env.example
+
+# Python cache and build files
+__pycache__/
+*.pyc
+.pytest_cache/
+
+# Editor and OS files
+.vscode/
+.DS_Store
+Thumbs.db
