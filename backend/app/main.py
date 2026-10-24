@@ -2,6 +2,7 @@ from fastapi import FastAPI
 
 from backend.app.core.config import settings
 from backend.app.api.auth import router as auth_router
+from backend.app.api.interviews import router as interviews_router
 
 app = FastAPI(
     title=settings.app_name,
@@ -18,3 +19,4 @@ def health_check():
         "environment": settings.environment,
     }
 app.include_router(auth_router)
+app.include_router(interviews_router)
