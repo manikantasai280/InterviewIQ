@@ -8,6 +8,9 @@ class Settings(BaseSettings):
     environment: str = "development"
     # Database (no default on purpose: the app must get this from .env)
     database_url: str
+    # Authentication
+    secret_key: str
+    access_token_expire_minutes: int = 60
 
     # Tells pydantic-settings to read values from a file called .env
     model_config = SettingsConfigDict(

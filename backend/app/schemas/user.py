@@ -23,3 +23,9 @@ class UserRead(BaseModel):
     full_name: str
     role: str
     created_at: datetime
+
+class Token(BaseModel):
+    """What the login endpoint returns."""
+
+    access_token: str
+    token_type: str = "bearer"
