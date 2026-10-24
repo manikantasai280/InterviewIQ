@@ -1,6 +1,7 @@
 from fastapi import FastAPI
 
 from backend.app.core.config import settings
+from backend.app.api.auth import router as auth_router
 
 app = FastAPI(
     title=settings.app_name,
@@ -16,3 +17,4 @@ def health_check():
         "message": "InterviewIQ backend is running!",
         "environment": settings.environment,
     }
+app.include_router(auth_router)
