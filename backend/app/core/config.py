@@ -11,6 +11,9 @@ class Settings(BaseSettings):
     # Authentication
     secret_key: str
     access_token_expire_minutes: int = 60
+        # Gemini AI
+    gemini_api_key: str
+    gemini_model: str = "gemini-3.5-flash-lite"
 
     # Tells pydantic-settings to read values from a file called .env
     model_config = SettingsConfigDict(
