@@ -9,6 +9,7 @@ from backend.app.db.database import Base
 from backend.app.models import user  # noqa: F401  (imported so Alembic sees the User table)
 from backend.app.models import interview  # noqa: F401
 from backend.app.models import question  # noqa: F401
+from backend.app.models import invitation  # noqa: F401
 
 # this is the Alembic Config object, which provides
 # access to the values within the .ini file in use.
