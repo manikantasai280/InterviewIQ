@@ -24,3 +24,4 @@ class Interview(Base):
     )
 
     recruiter: Mapped[User] = relationship()
+    jd_text: Mapped[str | None] = mapped_column(Text, default=None)
