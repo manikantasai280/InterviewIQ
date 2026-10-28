@@ -1,3 +1,6 @@
+import tempfile
+from pathlib import Path
+
 from fastapi import APIRouter, Depends, File, HTTPException, UploadFile, status
 from sqlalchemy import select
 from sqlalchemy.orm import Session
@@ -7,7 +10,7 @@ from backend.app.db.database import get_db
 from backend.app.models.interview import Interview
 from backend.app.models.user import User
 from backend.app.schemas.interview import InterviewCreate, InterviewRead
-from backend.app.services.pdf_extractor import extract_text_from_pdf
+from backend.app.services.rag_service import ingest_job_description, retrieve_context
 
 router = APIRouter(prefix="/interviews", tags=["interviews"])
 
@@ -64,16 +67,34 @@ def upload_job_description(
             detail="Please upload a PDF file.",
         )
 
-    try:
-        text = extract_text_from_pdf(file.file.read())
-    except ValueError as e:
-        raise HTTPException(status_code=status.HTTP_422_UNPROCESSABLE_ENTITY, detail=str(e))
-    except Exception:
-        raise HTTPException(
-            status_code=status.HTTP_400_BAD_REQUEST,
-            detail="Could not read this PDF.",
-        )
+    # PyPDFLoader needs a file path, so write the upload to a temp file first.
+    with tempfile.NamedTemporaryFile(delete=False, suffix=".pdf") as tmp:
+        tmp.write(file.file.read())
+        tmp_path = tmp.name
 
-    interview.jd_text = text
-    db.commit()
-    return {"interview_id": interview.id, "characters": len(text), "preview": text[:300]}
+    try:
+        chunk_count = ingest_job_description(tmp_path, interview.id)
+    except ValueError as e:
+        raise HTTPException(
+            status_code=status.HTTP_422_UNPROCESSABLE_ENTITY, detail=str(e)
+        )
+    finally:
+        Path(tmp_path).unlink(missing_ok=True)
+
+    return {"interview_id": interview.id, "chunks_stored": chunk_count}
+
+
+@router.get("/{interview_id}/jd/search")
+def search_job_description(
+    interview_id: int,
+    query: str,
+    current_user: User = Depends(get_current_user),
+    db: Session = Depends(get_db),
+):
+    interview = db.get(Interview, interview_id)
+    if interview is None or interview.recruiter_id != current_user.id:
+        raise HTTPException(
+            status_code=status.HTTP_404_NOT_FOUND,
+            detail="Interview not found.",
+        )
+    return {"query": query, "chunks": retrieve_context(interview.id, query, k=3)}
