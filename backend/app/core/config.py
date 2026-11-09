@@ -14,6 +14,13 @@ class Settings(BaseSettings):
         # Gemini AI
     gemini_api_key: str
     gemini_model: str = "gemini-3.5-flash-lite"
+        # Email (dry_run prints emails to the terminal instead of sending)
+    email_dry_run: bool = True
+    smtp_host: str = "smtp.gmail.com"
+    smtp_port: int = 587
+    smtp_username: str = ""
+    smtp_password: str = ""
+    frontend_url: str = "http://localhost:8501"
 
     # Tells pydantic-settings to read values from a file called .env
     model_config = SettingsConfigDict(

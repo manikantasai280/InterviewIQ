@@ -10,7 +10,9 @@ from backend.app.models.interview import Interview
 from backend.app.models.invitation import Invitation
 from backend.app.models.user import User
 from backend.app.schemas.invitation import InvitationCreate, InvitationRead
-
+from backend.app.services.email_service import send_invitation_email
+from backend.app.core.config import settings
+from backend.app.agents.invite_agent import invite_agent
 router = APIRouter(prefix="/interviews/{interview_id}/invitations", tags=["invitations"])
 
 
@@ -68,3 +70,41 @@ def list_invitations(
     interview = _owned_interview(interview_id, current_user, db)
     query = select(Invitation).where(Invitation.interview_id == interview.id)
     return list(db.scalars(query))
+@router.post("/send")
+def send_invitations(
+    interview_id: int,
+    current_user: User = Depends(get_current_user),
+    db: Session = Depends(get_db),
+):
+    interview = _owned_interview(interview_id, current_user, db)
+    pending = list(
+        db.scalars(
+            select(Invitation).where(
+                Invitation.interview_id == interview.id,
+                Invitation.email_sent.is_(False),
+            )
+        )
+    )
+    if not pending:
+        return {"sent": [], "failed": [], "dry_run": settings.email_dry_run}
+
+    result = invite_agent.invoke(
+        {
+            "interview_title": interview.title,
+            "job_role": interview.job_role,
+            "interview_id": interview.id,
+            "candidates": [
+                {
+                    "email": i.candidate_email,
+                    "access_code": i.access_code,
+                    "when": i.scheduled_at.strftime("%d %b %Y, %I:%M %p %Z"),
+                }
+                for i in pending
+            ],
+        }
+    )
+    for inv in pending:
+        if inv.candidate_email in result["sent"]:
+            inv.email_sent = True
+    db.commit()
+    return {"sent": result["sent"], "failed": result["failed"], "dry_run": settings.email_dry_run}

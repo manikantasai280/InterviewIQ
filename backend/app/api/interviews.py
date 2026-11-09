@@ -11,7 +11,7 @@ from backend.app.models.interview import Interview
 from backend.app.models.user import User
 from backend.app.schemas.interview import InterviewCreate, InterviewRead
 from backend.app.services.rag_service import ingest_job_description, retrieve_context
-
+from backend.app.agents.jd_agent import jd_agent
 router = APIRouter(prefix="/interviews", tags=["interviews"])
 
 
@@ -98,3 +98,18 @@ def search_job_description(
             detail="Interview not found.",
         )
     return {"query": query, "chunks": retrieve_context(interview.id, query, k=3)}
+
+@router.post("/{interview_id}/analyze")
+def analyze_job_description(
+    interview_id: int,
+    current_user: User = Depends(get_current_user),
+    db: Session = Depends(get_db),
+):
+    interview = db.get(Interview, interview_id)
+    if interview is None or interview.recruiter_id != current_user.id:
+        raise HTTPException(status_code=404, detail="Interview not found.")
+
+    result = jd_agent.invoke({"interview_id": interview.id})
+    interview.skills = ", ".join(result["skills"])
+    db.commit()
+    return {"role_summary": result["role_summary"], "skills": result["skills"]}
