@@ -43,7 +43,8 @@ def send_node(state: InviteState):
         try:
             send_email(c["email"], f"Interview invitation: {state['interview_title']}", body)
             sent.append(c["email"])
-        except Exception:
+        except Exception as e:
+            print(f"EMAIL FAILED for {c['email']}: {e}")
             failed.append(c["email"])
     return {"sent": sent, "failed": failed}
 
